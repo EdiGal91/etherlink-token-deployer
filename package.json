@@ -1,0 +1,16 @@
+{
+  "name": "token-deployer",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "contracts"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w frontend",
+    "build": "npm run build -w frontend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
