@@ -36,6 +36,20 @@ const config: HardhatUserConfig = {
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
     },
+    etherlinkTestnet: {
+      type: "http",
+      url: "https://node.ghostnet.etherlink.com",
+      chainId: 128123,
+      accounts: [configVariable("PRIVATE_KEY")],
+      gasPrice: 1_000_000_000, // 1 gwei
+    },
+    etherlinkMainnet: {
+      type: "http",
+      url: "https://node.mainnet.etherlink.com",
+      chainId: 42793,
+      accounts: [configVariable("PRIVATE_KEY")],
+      gasPrice: 1_000_000_000, // 1 gwei
+    },
   },
 };
 

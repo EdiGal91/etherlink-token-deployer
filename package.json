@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "dev": "npm run dev -w frontend",
-    "build": "npm run build -w frontend"
+    "build": "npm run build -w frontend",
+    "deploy:testnet": "npm run deploy:testnet -w contracts",
+    "deploy:mainnet": "npm run deploy:mainnet -w contracts"
   },
   "keywords": [],
   "author": "",

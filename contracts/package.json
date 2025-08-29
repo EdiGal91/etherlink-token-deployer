@@ -2,6 +2,11 @@
   "name": "contracts",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "deploy:testnet": "hardhat ignition deploy ignition/modules/ERC20Factory.ts --network etherlinkTestnet",
+    "deploy:mainnet": "hardhat ignition deploy ignition/modules/ERC20Factory.ts --network etherlinkMainnet",
+    "build": "hardhat build"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.1",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
