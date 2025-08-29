@@ -15,8 +15,8 @@ contract BasicERC20 is ERC20 {
     ) ERC20(name_, symbol_) {
         require(decimals_ <= 18, "decimals too large");
         require(initialSupply_ > 0, "initial supply must be greater than 0");
-        require(name_ != "", "name must be set");
-        require(symbol_ != "", "symbol must be set");
+        require(bytes(name_).length != 0, "name must be set");
+        require(bytes(symbol_).length != 0, "symbol must be set");
         require(owner_ != address(0), "owner must be set");
 
         _customDecimals = decimals_;

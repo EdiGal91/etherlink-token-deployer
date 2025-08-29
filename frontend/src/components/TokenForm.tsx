@@ -1,5 +1,12 @@
 import { useRef, useState } from "react";
 
+import testnetArtifact from "@contracts/chain-128123/artifacts/ERC20FactoryModule#ERC20Factory.json";
+import testnetDeployedAddresses from "@contracts/chain-128123/deployed_addresses.json";
+
+const TESTNET_FACTORY_ABI = testnetArtifact.abi;
+const TESTNET_FACTORY_ADDRESS =
+  testnetDeployedAddresses["ERC20FactoryModule#ERC20Factory"];
+
 export function TokenForm() {
   const tokenNameRef = useRef<HTMLInputElement>(null);
   const [tokenSymbol, setTokenSymbol] = useState("");
