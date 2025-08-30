@@ -1,6 +1,6 @@
 {
   "_format": "hh3-sol-build-info-1",
-  "id": "solc-0_8_28-e31de9f154f53bb449c44a38f874b3113a839f48",
+  "id": "solc-0_8_28-f5838d8e1ac657783708c1a355b536e0dcaa1df9",
   "solcVersion": "0.8.28",
   "solcLongVersion": "0.8.28+commit.7893614a",
   "userSourceNameMap": {
@@ -52,7 +52,7 @@
         "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.28;\n\nimport \"@openzeppelin/contracts/token/ERC20/ERC20.sol\";\n\ncontract BasicERC20 is ERC20 {\n    uint8 private immutable _customDecimals;\n\n    constructor(\n        string memory name_,\n        string memory symbol_,\n        uint8 decimals_,\n        uint256 initialSupply_,\n        address owner_\n    ) ERC20(name_, symbol_) {\n        require(decimals_ <= 18, \"decimals too large\");\n        require(initialSupply_ > 0, \"initial supply must be greater than 0\");\n        require(bytes(name_).length != 0, \"name must be set\");\n        require(bytes(symbol_).length != 0, \"symbol must be set\");\n        require(owner_ != address(0), \"owner must be set\");\n\n        _customDecimals = decimals_;\n        _mint(owner_, initialSupply_ * 10 ** _customDecimals);\n    }\n\n    function decimals() public view override returns (uint8) {\n        return _customDecimals;\n    }\n}\n"
       },
       "project/contracts/ERC20Factory.sol": {
-        "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.28;\n\nimport \"./BasicERC20.sol\";\n\ncontract ERC20Factory {\n    event TokenDeployed(\n        address indexed owner,\n        address token,\n        string name,\n        string symbol,\n        uint8 decimals\n    );\n\n    function createToken(\n        string memory name_,\n        string memory symbol_,\n        uint8 decimals_,\n        uint256 initialSupply_\n    ) external returns (address token) {\n        BasicERC20 t = new BasicERC20(\n            name_,\n            symbol_,\n            decimals_,\n            initialSupply_,\n            msg.sender\n        );\n        token = address(t);\n\n        emit TokenDeployed(msg.sender, token, name_, symbol_, decimals_);\n    }\n}\n"
+        "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.28;\n\nimport \"./BasicERC20.sol\";\n\ncontract ERC20Factory {\n    mapping(address => address[]) public ownerTokens;\n\n    event TokenDeployed(\n        address indexed owner,\n        address token,\n        string name,\n        string symbol,\n        uint8 decimals\n    );\n\n    function createToken(\n        string memory name_,\n        string memory symbol_,\n        uint8 decimals_,\n        uint256 initialSupply_\n    ) external returns (address token) {\n        BasicERC20 t = new BasicERC20(\n            name_,\n            symbol_,\n            decimals_,\n            initialSupply_,\n            msg.sender\n        );\n        token = address(t);\n\n        ownerTokens[msg.sender].push(token);\n\n        emit TokenDeployed(msg.sender, token, name_, symbol_, decimals_);\n    }\n\n    function getOwnerTokens(\n        address owner\n    ) external view returns (address[] memory) {\n        return ownerTokens[owner];\n    }\n}\n"
       }
     }
   }

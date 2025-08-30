@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import "./BasicERC20.sol";
 
 contract ERC20Factory {
+    mapping(address => address[]) public ownerTokens;
+
     event TokenDeployed(
         address indexed owner,
         address token,
@@ -27,6 +29,14 @@ contract ERC20Factory {
         );
         token = address(t);
 
+        ownerTokens[msg.sender].push(token);
+
         emit TokenDeployed(msg.sender, token, name_, symbol_, decimals_);
+    }
+
+    function getOwnerTokens(
+        address owner
+    ) external view returns (address[] memory) {
+        return ownerTokens[owner];
     }
 }

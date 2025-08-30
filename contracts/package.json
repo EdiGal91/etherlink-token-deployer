@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "deploy:testnet": "hardhat ignition deploy ignition/modules/ERC20Factory.ts --network etherlinkTestnet",
-    "deploy:mainnet": "hardhat ignition deploy ignition/modules/ERC20Factory.ts --network etherlinkMainnet",
-    "build": "hardhat build"
+    "deploy:testnet": "hardhat ignition deploy ignition/modules/ERC20Factory.ts --network etherlinkTestnet --reset && npm run rename-artifacts",
+    "deploy:mainnet": "hardhat ignition deploy ignition/modules/ERC20Factory.ts --network etherlinkMainnet --reset && npm run rename-artifacts",
+    "build": "hardhat build",
+    "rename-artifacts": "tsx scripts/renameArtifacts.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.1",

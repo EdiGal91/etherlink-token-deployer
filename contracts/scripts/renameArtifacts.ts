@@ -1,0 +1,55 @@
+// contracts/scripts/renameArtifacts.ts
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// безопасно соберём пути относительно contracts/
+function p(...segs: string[]) {
+  return path.resolve(__dirname, "..", ...segs);
+}
+
+function renameIfExists(src: string, dst: string) {
+  if (!fs.existsSync(src)) {
+    console.log("[skip] нет файла:", src);
+    return;
+  }
+  // если уже переименован — тоже скипаем
+  if (fs.existsSync(dst)) {
+    console.log("[skip] уже существует:", dst);
+    return;
+  }
+  fs.renameSync(src, dst);
+  console.log(
+    "[ok] переименовано:",
+    path.basename(src),
+    "→",
+    path.basename(dst)
+  );
+}
+
+renameIfExists(
+  p(
+    "ignition/deployments/chain-42793/artifacts",
+    "ERC20FactoryModule#ERC20Factory.json"
+  ),
+  p(
+    "ignition/deployments/chain-42793/artifacts",
+    "ERC20FactoryModule_ERC20Factory.json"
+  )
+);
+
+renameIfExists(
+  p(
+    "ignition/deployments/chain-128123/artifacts",
+    "ERC20FactoryModule#ERC20Factory.json"
+  ),
+  p(
+    "ignition/deployments/chain-128123/artifacts",
+    "ERC20FactoryModule_ERC20Factory.json"
+  )
+);
+
+console.log("Artifacts rename done.");
