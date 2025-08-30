@@ -6,28 +6,22 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// безопасно соберём пути относительно contracts/
 function p(...segs: string[]) {
   return path.resolve(__dirname, "..", ...segs);
 }
 
 function renameIfExists(src: string, dst: string) {
   if (!fs.existsSync(src)) {
-    console.log("[skip] нет файла:", src);
+    console.log("[skip] no file:", src);
     return;
   }
-  // если уже переименован — тоже скипаем
+  // if already renamed — skip
   if (fs.existsSync(dst)) {
-    console.log("[skip] уже существует:", dst);
+    console.log("[skip] already exists:", dst);
     return;
   }
   fs.renameSync(src, dst);
-  console.log(
-    "[ok] переименовано:",
-    path.basename(src),
-    "→",
-    path.basename(dst)
-  );
+  console.log("[ok] renamed:", path.basename(src), "→", path.basename(dst));
 }
 
 renameIfExists(

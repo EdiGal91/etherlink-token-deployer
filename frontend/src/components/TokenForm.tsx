@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   useAccount,
   useWriteContract,
@@ -38,10 +38,29 @@ export function TokenForm() {
 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const {
+    writeContract,
+    data: hash,
+    isPending,
+    error,
+    reset,
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
+
+  useEffect(() => {
+    reset();
+  }, [chainId, reset]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      if (tokenNameRef.current) tokenNameRef.current.value = "";
+      setTokenSymbol("");
+      if (decimalRef.current) decimalRef.current.value = "18";
+      if (initialSupplyRef.current) initialSupplyRef.current.value = "1000";
+    }
+  }, [isSuccess]);
 
   const isTestnet = chainId === 128123;
   const factoryAbi = isTestnet ? TESTNET_FACTORY_ABI : MAINNET_FACTORY_ABI;
