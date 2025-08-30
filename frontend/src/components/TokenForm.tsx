@@ -30,11 +30,19 @@ const MAINNET_FACTORY_ADDRESS = (
   mainnetDeployedMod.default as Record<string, string>
 )["ERC20FactoryModule#ERC20Factory"] as `0x${string}`;
 
+const SUPPLY_PRESETS = [
+  { value: 1_000, label: "1K" },
+  { value: 100_000, label: "100K" },
+  { value: 1_000_000, label: "1M" },
+  { value: 100_000_000, label: "100M" },
+  { value: 1_000_000_000, label: "1B" },
+];
+
 export function TokenForm() {
   const tokenNameRef = useRef<HTMLInputElement>(null);
   const [tokenSymbol, setTokenSymbol] = useState("");
   const decimalRef = useRef<HTMLInputElement>(null);
-  const initialSupplyRef = useRef<HTMLInputElement>(null);
+  const [initialSupply, setInitialSupply] = useState("1,000");
 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -58,7 +66,7 @@ export function TokenForm() {
       if (tokenNameRef.current) tokenNameRef.current.value = "";
       setTokenSymbol("");
       if (decimalRef.current) decimalRef.current.value = "18";
-      if (initialSupplyRef.current) initialSupplyRef.current.value = "1000";
+      setInitialSupply("1,000");
     }
   }, [isSuccess]);
 
@@ -73,10 +81,7 @@ export function TokenForm() {
 
     const tokenName = tokenNameRef.current?.value?.trim() ?? "";
     const decimals = parseInputToInt(decimalRef.current?.value, 18);
-    const initialSupply = parseInputToInt(
-      initialSupplyRef.current?.value,
-      1_000
-    );
+    const supply = parseInt(initialSupply.replace(/,/g, ""), 10);
 
     if (!tokenName.length) {
       alert("Token name required");
@@ -87,7 +92,7 @@ export function TokenForm() {
       return;
     }
 
-    if (initialSupply < 0) {
+    if (supply < 0) {
       alert("Initial supply must be greater than 0");
       return;
     }
@@ -101,14 +106,21 @@ export function TokenForm() {
       address: factoryAddress,
       abi: factoryAbi,
       functionName: "createToken",
-      args: [tokenName, tokenSymbol, decimals, initialSupply],
+      args: [tokenName, tokenSymbol, decimals, supply],
     });
   };
 
   const parseInputToInt = (value: string = "", defaultValue = 0): number => {
-    const parsed = parseInt(value, 10);
-    const decimals = Number.isNaN(parsed) ? defaultValue : parsed;
-    return decimals;
+    const parsed = parseInt(value.replace(/,/g, ""), 10);
+    const num = Number.isNaN(parsed) ? defaultValue : parsed;
+    return num;
+  };
+
+  const handleSupplyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/,/g, "");
+    if (!/^\d*$/.test(value)) return; // Allow only numbers
+    const num = parseInt(value, 10);
+    setInitialSupply(Number.isNaN(num) ? "" : num.toLocaleString());
   };
 
   return (
@@ -146,7 +158,9 @@ export function TokenForm() {
             type="text"
             placeholder="e.g., MTK"
             value={tokenSymbol}
-            onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
+            onChange={(e) =>
+              setTokenSymbol(e.target.value.toUpperCase().slice(0, 11))
+            }
             required
           />
         </div>
@@ -176,16 +190,33 @@ export function TokenForm() {
           >
             Initial Supply
           </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="initialSupply"
-            type="number"
-            defaultValue={1_000}
-            ref={initialSupplyRef}
-            min={1}
-            step={1}
-            required
-          />
+          <div className="relative">
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-16"
+              id="initialSupply"
+              type="text"
+              value={initialSupply}
+              onChange={handleSupplyChange}
+              required
+            />
+            {tokenSymbol && (
+              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                <span className="text-gray-500">{tokenSymbol}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex space-x-2 mt-2">
+            {SUPPLY_PRESETS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setInitialSupply(value.toLocaleString())}
+                className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-semibold py-1 px-3 rounded-full transition-colors"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <button
