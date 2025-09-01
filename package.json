@@ -11,9 +11,13 @@
     "build": "npm run build -w frontend",
     "deploy": "npm run deploy:testnet && npm run deploy:mainnet",
     "deploy:testnet": "npm run deploy:testnet -w contracts",
-    "deploy:mainnet": "npm run deploy:mainnet -w contracts"
+    "deploy:mainnet": "npm run deploy:mainnet -w contracts",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
 }
