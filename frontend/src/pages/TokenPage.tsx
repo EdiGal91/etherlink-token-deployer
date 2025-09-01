@@ -1,7 +1,12 @@
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useChainId, usePublicClient } from "wagmi";
-import { erc20Abi } from "viem";
+import { useState, useEffect, useRef } from "react";
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useWriteContract,
+} from "wagmi";
+import { erc20Abi, parseUnits, formatUnits, type Abi } from "viem";
 
 const ownableAbi = [
   {
@@ -21,9 +26,31 @@ const mintableAbi = [
     inputs: [],
     outputs: [{ type: "bool" }],
   },
+  {
+    type: "function",
+    name: "mint",
+    stateMutability: "nonpayable",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "Minted",
+    inputs: [
+      { indexed: true, name: "to", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+  },
 ] as const;
 
-const tokenAbi = [...erc20Abi, ...ownableAbi, ...mintableAbi] as const;
+const tokenAbi = [
+  ...erc20Abi,
+  ...ownableAbi,
+  ...mintableAbi,
+] as const satisfies Abi;
 
 interface TokenInfo {
   name: string;
@@ -41,8 +68,26 @@ export function TokenPage() {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userBalance, setUserBalance] = useState<string | null>(null);
+
+  const { address: accountAddress } = useAccount();
+  const {
+    data: hash,
+    writeContract,
+    isPending,
+    error: writeError,
+  } = useWriteContract();
+
+  const mintToAddressRef = useRef<HTMLInputElement>(null);
+  const mintAmountRef = useRef<HTMLInputElement>(null);
 
   const isTestnet = chainId === 128123;
+
+  useEffect(() => {
+    if (accountAddress && mintToAddressRef.current) {
+      mintToAddressRef.current.value = accountAddress;
+    }
+  }, [accountAddress]);
 
   useEffect(() => {
     if (!address || !publicClient) return;
@@ -85,10 +130,8 @@ export function TokenPage() {
             }),
           ]);
 
-        const totalSupplyBigInt = totalSupply as bigint;
-        const formattedSupply = (
-          Number(totalSupplyBigInt) / Math.pow(10, decimals as number)
-        ).toLocaleString();
+        const supply = formatUnits(totalSupply as bigint, decimals as number);
+        const formattedSupply = new Intl.NumberFormat().format(Number(supply));
 
         setTokenInfo({
           name: name as string,
@@ -108,6 +151,84 @@ export function TokenPage() {
 
     fetchTokenInfo();
   }, [address, publicClient]);
+
+  useEffect(() => {
+    if (!address || !publicClient) return;
+
+    const unwatch = publicClient.watchContractEvent({
+      address: address as `0x${string}`,
+      abi: tokenAbi,
+      eventName: "Minted",
+      onLogs: async () => {
+        const totalSupply = await publicClient.readContract({
+          address: address as `0x${string}`,
+          abi: tokenAbi,
+          functionName: "totalSupply",
+        });
+        const decimals = await publicClient.readContract({
+          address: address as `0x${string}`,
+          abi: tokenAbi,
+          functionName: "decimals",
+        });
+
+        const supply = formatUnits(totalSupply as bigint, decimals as number);
+        const formattedSupply = new Intl.NumberFormat().format(Number(supply));
+        setTokenInfo((prev) =>
+          prev ? { ...prev, totalSupply: formattedSupply } : null
+        );
+      },
+    });
+
+    return () => {
+      unwatch();
+    };
+  }, [address, publicClient, tokenAbi]);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (address && publicClient && accountAddress && tokenInfo) {
+        const balance = await publicClient.readContract({
+          address: address as `0x${string}`,
+          abi: tokenAbi,
+          functionName: "balanceOf",
+          args: [accountAddress],
+        });
+        const supply = formatUnits(balance, tokenInfo.decimals);
+        const formattedBalance = new Intl.NumberFormat().format(Number(supply));
+        setUserBalance(formattedBalance);
+      } else {
+        setUserBalance(null);
+      }
+    };
+    fetchBalance();
+  }, [address, publicClient, accountAddress, tokenInfo]);
+
+  const handleMint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !address ||
+      !tokenInfo ||
+      !mintToAddressRef.current ||
+      !mintAmountRef.current
+    )
+      return;
+
+    const mintToAddress = mintToAddressRef.current.value;
+    const mintAmount = mintAmountRef.current.value;
+    const amount = parseUnits(mintAmount, tokenInfo.decimals);
+
+    writeContract({
+      address: address as `0x${string}`,
+      abi: tokenAbi,
+      functionName: "mint",
+      args: [mintToAddress as `0x${string}`, amount],
+    });
+  };
+
+  const isOwner =
+    accountAddress &&
+    tokenInfo &&
+    accountAddress.toLowerCase() === tokenInfo.owner.toLowerCase();
 
   if (loading) {
     return (
@@ -153,12 +274,16 @@ export function TokenPage() {
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Decimals
-              </label>
-              <p className="text-lg text-gray-900">{tokenInfo.decimals}</p>
-            </div>
+            {userBalance && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Balance
+                </label>
+                <p className="text-lg text-gray-900">
+                  {userBalance} {tokenInfo.symbol}
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -167,6 +292,13 @@ export function TokenPage() {
               <p className="text-lg text-gray-900">
                 {tokenInfo.totalSupply} {tokenInfo.symbol}
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Decimals
+              </label>
+              <p className="text-lg text-gray-900">{tokenInfo.decimals}</p>
             </div>
           </div>
 
@@ -207,6 +339,79 @@ export function TokenPage() {
             </div>
           </div>
         </div>
+
+        {isOwner && tokenInfo.mintable && (
+          <div className="mt-8 border-t pt-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Mint New Tokens
+            </h2>
+            <form onSubmit={handleMint} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="mintAddress"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Recipient Address
+                </label>
+                <input
+                  type="text"
+                  id="mintAddress"
+                  ref={mintToAddressRef}
+                  defaultValue={accountAddress ?? ""}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="0x..."
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="mintAmount"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  id="mintAmount"
+                  ref={mintAmountRef}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder={`e.g., 100`}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+              >
+                {isPending ? "Minting..." : "Mint Tokens"}
+              </button>
+
+              {hash && (
+                <div className="mt-4 text-sm text-green-600">
+                  Transaction sent!{" "}
+                  <a
+                    href={`${
+                      isTestnet
+                        ? "https://testnet.explorer.etherlink.com"
+                        : "https://explorer.etherlink.com"
+                    }/tx/${hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    View on Explorer
+                  </a>
+                </div>
+              )}
+              {writeError && (
+                <div className="mt-4 text-sm text-red-600">
+                  Error: {writeError.message}
+                </div>
+              )}
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
