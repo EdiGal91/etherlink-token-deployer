@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useAccount,
   useChainId,
@@ -50,6 +51,7 @@ export function DeployedTokensList() {
   const chainId = useChainId();
   const publicClient = usePublicClient();
   const config = useConfig();
+  const navigate = useNavigate();
   const [tokenDetails, setTokenDetails] = useState<TokenDetails[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -175,7 +177,8 @@ export function DeployedTokensList() {
           {tokenDetails.map((token, index) => (
             <div
               key={index}
-              className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+              className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+              onClick={() => navigate(`/token/${token.address}`)}
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -193,7 +196,10 @@ export function DeployedTokensList() {
                   </p>
                 </div>
                 <button
-                  onClick={() => addToMetaMask(token)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToMetaMask(token);
+                  }}
                   className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
                 >
                   Add to MetaMask
@@ -213,6 +219,7 @@ export function DeployedTokensList() {
                   }/token/${token.address}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   View on {isTestnet ? "Testnet" : "Mainnet"} Explorer →
