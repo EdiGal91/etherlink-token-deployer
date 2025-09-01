@@ -13,7 +13,7 @@ export function Header() {
               className="text-xl font-semibold text-gray-900 cursor-pointer hover:text-gray-700 transition-colors"
               onClick={() => navigate("/")}
             >
-              Token Deployer
+              Etherlink Token Deployer
             </h1>
           </div>
           <ConnectButton />
