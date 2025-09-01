@@ -44,6 +44,7 @@ export function TokenForm() {
   const decimalRef = useRef<HTMLInputElement>(null);
   const [initialSupply, setInitialSupply] = useState("1,000");
   const isMintableRef = useRef<HTMLInputElement>(null);
+  const isBurnableRef = useRef<HTMLInputElement>(null);
 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -85,6 +86,7 @@ export function TokenForm() {
     const decimals = parseInputToInt(decimalRef.current?.value, 18);
     const supply = parseInt(initialSupply.replace(/,/g, ""), 10);
     const isMintable = isMintableRef.current?.checked ?? false;
+    const isBurnable = isBurnableRef.current?.checked ?? false;
 
     if (!tokenName.length) {
       alert("Token name required");
@@ -109,7 +111,7 @@ export function TokenForm() {
       address: factoryAddress,
       abi: factoryAbi,
       functionName: "createToken",
-      args: [tokenName, tokenSymbol, decimals, supply, isMintable],
+      args: [tokenName, tokenSymbol, decimals, supply, isMintable, isBurnable],
     });
   };
 
@@ -230,6 +232,17 @@ export function TokenForm() {
               className="form-checkbox h-5 w-5 text-blue-600"
             />
             <span className="ml-2 text-gray-700">Make token mintable</span>
+          </label>
+        </div>
+        <div className="mb-6">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              ref={isBurnableRef}
+              defaultChecked={false}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span className="ml-2 text-gray-700">Make token burnable</span>
           </label>
         </div>
         <div className="flex items-center justify-between">

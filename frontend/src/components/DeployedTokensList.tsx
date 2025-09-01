@@ -44,6 +44,7 @@ interface TokenDetails {
   decimals: number;
   balance: string;
   mintable: boolean;
+  burnable: boolean;
 }
 
 export function DeployedTokensList() {
@@ -78,6 +79,7 @@ export function DeployedTokensList() {
         symbol: string;
         decimals: number;
         mintable: boolean;
+        burnable: boolean;
       }>
     | undefined;
 
@@ -110,6 +112,7 @@ export function DeployedTokensList() {
               symbol: tokenInfo.symbol,
               decimals: tokenInfo.decimals,
               mintable: tokenInfo.mintable,
+              burnable: tokenInfo.burnable,
               balance: formattedBalance,
             };
           })
@@ -186,6 +189,11 @@ export function DeployedTokensList() {
                     {token.mintable && (
                       <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">
                         Mintable
+                      </span>
+                    )}
+                    {token.burnable && (
+                      <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                        Burnable
                       </span>
                     )}
                   </div>

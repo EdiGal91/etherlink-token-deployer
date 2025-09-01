@@ -46,10 +46,46 @@ const mintableAbi = [
   },
 ] as const;
 
+const burnableAbi = [
+  {
+    type: "function",
+    name: "burnable",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "burn",
+    stateMutability: "nonpayable",
+    inputs: [{ type: "uint256", name: "amount" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "burnFrom",
+    stateMutability: "nonpayable",
+    inputs: [
+      { type: "address", name: "account" },
+      { type: "uint256", name: "amount" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "Burned",
+    inputs: [
+      { indexed: true, name: "from", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+  },
+] as const;
+
 const tokenAbi = [
   ...erc20Abi,
   ...ownableAbi,
   ...mintableAbi,
+  ...burnableAbi,
 ] as const satisfies Abi;
 
 interface TokenInfo {
@@ -59,6 +95,7 @@ interface TokenInfo {
   totalSupply: string;
   owner: string;
   mintable: boolean;
+  burnable: boolean;
 }
 
 export function TokenPage() {
@@ -80,6 +117,9 @@ export function TokenPage() {
 
   const mintToAddressRef = useRef<HTMLInputElement>(null);
   const mintAmountRef = useRef<HTMLInputElement>(null);
+  const burnAmountRef = useRef<HTMLInputElement>(null);
+  const burnFromAddressRef = useRef<HTMLInputElement>(null);
+  const burnFromAmountRef = useRef<HTMLInputElement>(null);
 
   const isTestnet = chainId === 128123;
 
@@ -102,7 +142,7 @@ export function TokenPage() {
           abi: tokenAbi,
         };
 
-        const [name, symbol, decimals, totalSupply, owner, mintable] =
+        const [name, symbol, decimals, totalSupply, owner, mintable, burnable] =
           await Promise.all([
             publicClient.readContract({
               ...tokenContract,
@@ -128,6 +168,10 @@ export function TokenPage() {
               ...tokenContract,
               functionName: "mintable",
             }),
+            publicClient.readContract({
+              ...tokenContract,
+              functionName: "burnable",
+            }),
           ]);
 
         const supply = formatUnits(totalSupply as bigint, decimals as number);
@@ -140,6 +184,7 @@ export function TokenPage() {
           totalSupply: formattedSupply,
           owner: owner as string,
           mintable: mintable as boolean,
+          burnable: burnable as boolean,
         });
       } catch (err) {
         console.error("Error fetching token info:", err);
@@ -176,13 +221,73 @@ export function TokenPage() {
         setTokenInfo((prev) =>
           prev ? { ...prev, totalSupply: formattedSupply } : null
         );
+
+        if (accountAddress && tokenInfo) {
+          const balance = await publicClient.readContract({
+            address: address as `0x${string}`,
+            abi: tokenAbi,
+            functionName: "balanceOf",
+            args: [accountAddress],
+          });
+          const balanceSupply = formatUnits(balance, tokenInfo.decimals);
+          const formattedBalance = new Intl.NumberFormat().format(
+            Number(balanceSupply)
+          );
+          setUserBalance(formattedBalance);
+        }
       },
     });
 
     return () => {
       unwatch();
     };
-  }, [address, publicClient, tokenAbi]);
+  }, [address, publicClient, tokenAbi, accountAddress, tokenInfo]);
+
+  useEffect(() => {
+    if (!address || !publicClient) return;
+
+    const unwatch = publicClient.watchContractEvent({
+      address: address as `0x${string}`,
+      abi: tokenAbi,
+      eventName: "Burned",
+      onLogs: async () => {
+        const totalSupply = await publicClient.readContract({
+          address: address as `0x${string}`,
+          abi: tokenAbi,
+          functionName: "totalSupply",
+        });
+        const decimals = await publicClient.readContract({
+          address: address as `0x${string}`,
+          abi: tokenAbi,
+          functionName: "decimals",
+        });
+
+        const supply = formatUnits(totalSupply as bigint, decimals as number);
+        const formattedSupply = new Intl.NumberFormat().format(Number(supply));
+        setTokenInfo((prev) =>
+          prev ? { ...prev, totalSupply: formattedSupply } : null
+        );
+
+        if (accountAddress && tokenInfo) {
+          const balance = await publicClient.readContract({
+            address: address as `0x${string}`,
+            abi: tokenAbi,
+            functionName: "balanceOf",
+            args: [accountAddress],
+          });
+          const balanceSupply = formatUnits(balance, tokenInfo.decimals);
+          const formattedBalance = new Intl.NumberFormat().format(
+            Number(balanceSupply)
+          );
+          setUserBalance(formattedBalance);
+        }
+      },
+    });
+
+    return () => {
+      unwatch();
+    };
+  }, [address, publicClient, tokenAbi, accountAddress, tokenInfo]);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -225,6 +330,43 @@ export function TokenPage() {
     });
   };
 
+  const handleBurn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address || !tokenInfo || !burnAmountRef.current) return;
+
+    const burnAmount = burnAmountRef.current.value;
+    const amount = parseUnits(burnAmount, tokenInfo.decimals);
+
+    writeContract({
+      address: address as `0x${string}`,
+      abi: tokenAbi,
+      functionName: "burn",
+      args: [amount],
+    });
+  };
+
+  const handleBurnFrom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !address ||
+      !tokenInfo ||
+      !burnFromAddressRef.current ||
+      !burnFromAmountRef.current
+    )
+      return;
+
+    const burnFromAddress = burnFromAddressRef.current.value;
+    const burnFromAmount = burnFromAmountRef.current.value;
+    const amount = parseUnits(burnFromAmount, tokenInfo.decimals);
+
+    writeContract({
+      address: address as `0x${string}`,
+      abi: tokenAbi,
+      functionName: "burnFrom",
+      args: [burnFromAddress as `0x${string}`, amount],
+    });
+  };
+
   const isOwner =
     accountAddress &&
     tokenInfo &&
@@ -259,6 +401,11 @@ export function TokenPage() {
           {tokenInfo.mintable && (
             <span className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full">
               Mintable
+            </span>
+          )}
+          {tokenInfo.burnable && (
+            <span className="bg-red-100 text-red-700 text-sm px-3 py-1 rounded-full">
+              Burnable
             </span>
           )}
         </div>
@@ -409,6 +556,83 @@ export function TokenPage() {
                   Error: {writeError.message}
                 </div>
               )}
+            </form>
+          </div>
+        )}
+
+        {tokenInfo.burnable && (
+          <div className="mt-8 border-t pt-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Burn Tokens
+            </h2>
+            <form onSubmit={handleBurn} className="space-y-4 mb-6">
+              <h3 className="font-semibold">Burn from your balance</h3>
+              <div>
+                <label
+                  htmlFor="burnAmount"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  id="burnAmount"
+                  ref={burnAmountRef}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder={`e.g., 100`}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400"
+              >
+                {isPending ? "Burning..." : "Burn Tokens"}
+              </button>
+            </form>
+
+            <form onSubmit={handleBurnFrom} className="space-y-4">
+              <h3 className="font-semibold">Burn from another address</h3>
+              <div>
+                <label
+                  htmlFor="burnFromAddress"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  From Address
+                </label>
+                <input
+                  type="text"
+                  id="burnFromAddress"
+                  ref={burnFromAddressRef}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="0x..."
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="burnFromAmount"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  id="burnFromAmount"
+                  ref={burnFromAmountRef}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder={`e.g., 100`}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400"
+              >
+                {isPending ? "Burning..." : "Burn From"}
+              </button>
             </form>
           </div>
         )}
