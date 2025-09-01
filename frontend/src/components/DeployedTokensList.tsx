@@ -92,7 +92,6 @@ export function DeployedTokensList() {
       try {
         const details = await Promise.all(
           tokenInfos.map(async (tokenInfo) => {
-            // Only need to fetch the balance from each token contract
             const balance = await publicClient.readContract({
               address: tokenInfo.token as `0x${string}`,
               abi: erc20Abi,

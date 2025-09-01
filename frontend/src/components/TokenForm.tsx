@@ -121,7 +121,7 @@ export function TokenForm() {
 
   const handleSupplyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/,/g, "");
-    if (!/^\d*$/.test(value)) return; // Allow only numbers
+    if (!/^\d*$/.test(value)) return;
     const num = parseInt(value, 10);
     setInitialSupply(Number.isNaN(num) ? "" : num.toLocaleString());
   };
