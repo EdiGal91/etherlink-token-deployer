@@ -42,6 +42,7 @@ interface TokenDetails {
   symbol: string;
   decimals: number;
   balance: string;
+  mintable: boolean;
 }
 
 export function DeployedTokensList() {
@@ -58,20 +59,28 @@ export function DeployedTokensList() {
     ? TESTNET_FACTORY_ADDRESS
     : MAINNET_FACTORY_ADDRESS;
 
-  const { data: userTokenAddresses, refetch: refetchTokens } = useReadContract({
+  const { data: userTokenInfos, refetch: refetchTokens } = useReadContract({
     address: factoryAddress,
     abi: factoryAbi,
-    functionName: "getOwnerTokens",
+    functionName: "getOwnerTokenInfos",
     args: [address as `0x${string}`],
     query: {
       enabled: !!address && !!isConnected,
     },
   });
 
-  const tokensList = userTokenAddresses as string[] | undefined;
+  const tokenInfos = userTokenInfos as
+    | Array<{
+        token: string;
+        name: string;
+        symbol: string;
+        decimals: number;
+        mintable: boolean;
+      }>
+    | undefined;
 
   useEffect(() => {
-    if (!tokensList || !publicClient || tokensList.length === 0) {
+    if (!tokenInfos || !publicClient || tokenInfos.length === 0) {
       setTokenDetails([]);
       return;
     }
@@ -80,42 +89,26 @@ export function DeployedTokensList() {
       setLoading(true);
       try {
         const details = await Promise.all(
-          tokensList.map(async (tokenAddress) => {
-            const [name, symbol, decimals, balance] = await Promise.all([
-              publicClient.readContract({
-                address: tokenAddress as `0x${string}`,
-                abi: erc20Abi,
-                functionName: "name",
-              }),
-              publicClient.readContract({
-                address: tokenAddress as `0x${string}`,
-                abi: erc20Abi,
-                functionName: "symbol",
-              }),
-              publicClient.readContract({
-                address: tokenAddress as `0x${string}`,
-                abi: erc20Abi,
-                functionName: "decimals",
-              }),
-              publicClient.readContract({
-                address: tokenAddress as `0x${string}`,
-                abi: erc20Abi,
-                functionName: "balanceOf",
-                args: [address as `0x${string}`],
-              }),
-            ]);
+          tokenInfos.map(async (tokenInfo) => {
+            // Only need to fetch the balance from each token contract
+            const balance = await publicClient.readContract({
+              address: tokenInfo.token as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [address as `0x${string}`],
+            });
 
-            const decimalsNum = decimals as number;
             const balanceBigInt = balance as bigint;
             const formattedBalance = (
-              Number(balanceBigInt) / Math.pow(10, decimalsNum)
+              Number(balanceBigInt) / Math.pow(10, tokenInfo.decimals)
             ).toLocaleString();
 
             return {
-              address: tokenAddress,
-              name: name as string,
-              symbol: symbol as string,
-              decimals: decimalsNum,
+              address: tokenInfo.token,
+              name: tokenInfo.name,
+              symbol: tokenInfo.symbol,
+              decimals: tokenInfo.decimals,
+              mintable: tokenInfo.mintable,
               balance: formattedBalance,
             };
           })
@@ -130,7 +123,7 @@ export function DeployedTokensList() {
     };
 
     fetchTokenDetails();
-  }, [tokensList, publicClient]);
+  }, [tokenInfos, publicClient, address]);
 
   useWatchContractEvent({
     address: factoryAddress,
@@ -175,7 +168,7 @@ export function DeployedTokensList() {
 
       {loading ? (
         <p className="text-gray-600">Loading token details...</p>
-      ) : !tokensList || tokensList.length === 0 ? (
+      ) : !tokenInfos || tokenInfos.length === 0 ? (
         <p className="text-gray-600">No tokens deployed yet</p>
       ) : (
         <div className="space-y-4">
@@ -186,7 +179,14 @@ export function DeployedTokensList() {
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h4 className="font-semibold text-lg">{token.name}</h4>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-semibold text-lg">{token.name}</h4>
+                    {token.mintable && (
+                      <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">
+                        Mintable
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-600">{token.symbol}</p>
                   <p className="text-green-600 font-medium">
                     Balance: {token.balance} {token.symbol}

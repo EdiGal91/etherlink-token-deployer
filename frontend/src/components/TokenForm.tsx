@@ -43,6 +43,7 @@ export function TokenForm() {
   const [tokenSymbol, setTokenSymbol] = useState("");
   const decimalRef = useRef<HTMLInputElement>(null);
   const [initialSupply, setInitialSupply] = useState("1,000");
+  const isMintableRef = useRef<HTMLInputElement>(null);
 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -67,6 +68,7 @@ export function TokenForm() {
       setTokenSymbol("");
       if (decimalRef.current) decimalRef.current.value = "18";
       setInitialSupply("1,000");
+      if (isMintableRef.current) isMintableRef.current.checked = false;
     }
   }, [isSuccess]);
 
@@ -82,6 +84,7 @@ export function TokenForm() {
     const tokenName = tokenNameRef.current?.value?.trim() ?? "";
     const decimals = parseInputToInt(decimalRef.current?.value, 18);
     const supply = parseInt(initialSupply.replace(/,/g, ""), 10);
+    const isMintable = isMintableRef.current?.checked ?? false;
 
     if (!tokenName.length) {
       alert("Token name required");
@@ -106,7 +109,7 @@ export function TokenForm() {
       address: factoryAddress,
       abi: factoryAbi,
       functionName: "createToken",
-      args: [tokenName, tokenSymbol, decimals, supply],
+      args: [tokenName, tokenSymbol, decimals, supply, isMintable],
     });
   };
 
@@ -218,9 +221,20 @@ export function TokenForm() {
             ))}
           </div>
         </div>
+        <div className="mb-6">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              ref={isMintableRef}
+              defaultChecked={false}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span className="ml-2 text-gray-700">Make token mintable</span>
+          </label>
+        </div>
         <div className="flex items-center justify-between">
           <button
-            className="bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-blue-500 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
             type="submit"
             disabled={isPending || isConfirming}
           >
