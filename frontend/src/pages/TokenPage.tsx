@@ -62,16 +62,6 @@ const burnableAbi = [
     outputs: [],
   },
   {
-    type: "function",
-    name: "burnFrom",
-    stateMutability: "nonpayable",
-    inputs: [
-      { type: "address", name: "account" },
-      { type: "uint256", name: "amount" },
-    ],
-    outputs: [],
-  },
-  {
     type: "event",
     name: "Burned",
     inputs: [
@@ -118,8 +108,6 @@ export function TokenPage() {
   const mintToAddressRef = useRef<HTMLInputElement>(null);
   const mintAmountRef = useRef<HTMLInputElement>(null);
   const burnAmountRef = useRef<HTMLInputElement>(null);
-  const burnFromAddressRef = useRef<HTMLInputElement>(null);
-  const burnFromAmountRef = useRef<HTMLInputElement>(null);
 
   const isTestnet = chainId === 128123;
 
@@ -345,28 +333,6 @@ export function TokenPage() {
     });
   };
 
-  const handleBurnFrom = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      !address ||
-      !tokenInfo ||
-      !burnFromAddressRef.current ||
-      !burnFromAmountRef.current
-    )
-      return;
-
-    const burnFromAddress = burnFromAddressRef.current.value;
-    const burnFromAmount = burnFromAmountRef.current.value;
-    const amount = parseUnits(burnFromAmount, tokenInfo.decimals);
-
-    writeContract({
-      address: address as `0x${string}`,
-      abi: tokenAbi,
-      functionName: "burnFrom",
-      args: [burnFromAddress as `0x${string}`, amount],
-    });
-  };
-
   const isOwner =
     accountAddress &&
     tokenInfo &&
@@ -589,49 +555,6 @@ export function TokenPage() {
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400"
               >
                 {isPending ? "Burning..." : "Burn Tokens"}
-              </button>
-            </form>
-
-            <form onSubmit={handleBurnFrom} className="space-y-4">
-              <h3 className="font-semibold">Burn from another address</h3>
-              <div>
-                <label
-                  htmlFor="burnFromAddress"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  From Address
-                </label>
-                <input
-                  type="text"
-                  id="burnFromAddress"
-                  ref={burnFromAddressRef}
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="0x..."
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="burnFromAmount"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  id="burnFromAmount"
-                  ref={burnFromAmountRef}
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder={`e.g., 100`}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isPending}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400"
-              >
-                {isPending ? "Burning..." : "Burn From"}
               </button>
             </form>
           </div>
