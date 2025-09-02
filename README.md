@@ -22,15 +22,13 @@ This project is split into two main parts:
 To run the frontend locally:
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
 
-To work with the contracts:
+To deploy the contract:
 
 ```bash
-cd contracts
 npm install
-npx hardhat --help
+npm run deploy
 ```
