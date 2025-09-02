@@ -5,8 +5,10 @@ import {
   useChainId,
   usePublicClient,
   useWriteContract,
+  useConfig,
 } from "wagmi";
 import { erc20Abi, parseUnits, formatUnits, type Abi } from "viem";
+import { watchAsset } from "wagmi/actions";
 
 const ownableAbi = [
   {
@@ -104,6 +106,7 @@ export function TokenPage() {
     isPending,
     error: writeError,
   } = useWriteContract();
+  const config = useConfig();
 
   const mintToAddressRef = useRef<HTMLInputElement>(null);
   const mintAmountRef = useRef<HTMLInputElement>(null);
@@ -333,6 +336,23 @@ export function TokenPage() {
     });
   };
 
+  const addToMetaMask = async () => {
+    if (!address || !tokenInfo) return;
+    try {
+      await watchAsset(config, {
+        type: "ERC20",
+        options: {
+          address: address as `0x${string}`,
+          symbol: tokenInfo.symbol,
+          decimals: tokenInfo.decimals,
+        },
+      });
+    } catch (error) {
+      console.error("Error adding token to MetaMask:", error);
+      alert("Failed to add token to MetaMask");
+    }
+  };
+
   const isOwner =
     accountAddress &&
     tokenInfo &&
@@ -433,10 +453,7 @@ export function TokenPage() {
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Explorer
-              </label>
+            <div className="flex items-center space-x-2">
               <a
                 href={`${
                   isTestnet
@@ -447,8 +464,14 @@ export function TokenPage() {
                 rel="noopener noreferrer"
                 className="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
               >
-                View on {isTestnet ? "Testnet" : "Mainnet"} Explorer →
+                View on Explorer
               </a>
+              <button
+                onClick={addToMetaMask}
+                className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+              >
+                Add to MetaMask
+              </button>
             </div>
           </div>
         </div>
