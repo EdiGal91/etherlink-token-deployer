@@ -7,78 +7,10 @@ import {
   useWriteContract,
   useConfig,
 } from "wagmi";
-import { erc20Abi, parseUnits, formatUnits, type Abi } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { watchAsset } from "wagmi/actions";
 
-const ownableAbi = [
-  {
-    type: "function",
-    name: "owner",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "address" }],
-  },
-] as const;
-
-const mintableAbi = [
-  {
-    type: "function",
-    name: "mintable",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "mint",
-    stateMutability: "nonpayable",
-    inputs: [
-      { type: "address", name: "to" },
-      { type: "uint256", name: "amount" },
-    ],
-    outputs: [],
-  },
-  {
-    type: "event",
-    name: "Minted",
-    inputs: [
-      { indexed: true, name: "to", type: "address" },
-      { indexed: false, name: "amount", type: "uint256" },
-    ],
-  },
-] as const;
-
-const burnableAbi = [
-  {
-    type: "function",
-    name: "burnable",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "burn",
-    stateMutability: "nonpayable",
-    inputs: [{ type: "uint256", name: "amount" }],
-    outputs: [],
-  },
-  {
-    type: "event",
-    name: "Burned",
-    inputs: [
-      { indexed: true, name: "from", type: "address" },
-      { indexed: false, name: "amount", type: "uint256" },
-    ],
-  },
-] as const;
-
-const tokenAbi = [
-  ...erc20Abi,
-  ...ownableAbi,
-  ...mintableAbi,
-  ...burnableAbi,
-] as const satisfies Abi;
+import { tokenAbi } from "../abi/erc20";
 
 interface TokenInfo {
   name: string;

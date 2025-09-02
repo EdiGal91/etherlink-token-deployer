@@ -8,7 +8,7 @@ import {
   useWatchContractEvent,
 } from "wagmi";
 
-import { erc20Abi } from "viem";
+import { tokenAbi } from "../abi/erc20";
 
 import { watchAsset } from "wagmi/actions";
 import { useConfig } from "wagmi";
@@ -96,7 +96,7 @@ export function DeployedTokensList() {
           tokenInfos.map(async (tokenInfo) => {
             const balance = await publicClient.readContract({
               address: tokenInfo.token as `0x${string}`,
-              abi: erc20Abi,
+              abi: tokenAbi,
               functionName: "balanceOf",
               args: [address as `0x${string}`],
             });
