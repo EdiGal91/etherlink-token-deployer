@@ -63,9 +63,20 @@ const burnableAbi = [
   },
 ] as const satisfies Abi;
 
+const cappedAbi = [
+  {
+    type: "function",
+    name: "cap",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+] as const satisfies Abi;
+
 export const tokenAbi = [
   ...erc20Abi,
   ...ownableAbi,
   ...mintableAbi,
   ...burnableAbi,
+  ...cappedAbi,
 ] as const satisfies Abi;

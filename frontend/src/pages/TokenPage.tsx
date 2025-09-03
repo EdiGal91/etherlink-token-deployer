@@ -17,6 +17,8 @@ interface TokenInfo {
   symbol: string;
   decimals: number;
   totalSupply: string;
+  cap: bigint;
+  formattedCap: string;
   owner: string;
   mintable: boolean;
   burnable: boolean;
@@ -65,46 +67,65 @@ export function TokenPage() {
           abi: tokenAbi,
         };
 
-        const [name, symbol, decimals, totalSupply, owner, mintable, burnable] =
-          await Promise.all([
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "name",
-            }),
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "symbol",
-            }),
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "decimals",
-            }),
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "totalSupply",
-            }),
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "owner",
-            }),
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "mintable",
-            }),
-            publicClient.readContract({
-              ...tokenContract,
-              functionName: "burnable",
-            }),
-          ]);
+        const [
+          name,
+          symbol,
+          decimals,
+          totalSupply,
+          cap,
+          owner,
+          mintable,
+          burnable,
+        ] = await Promise.all([
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "name",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "symbol",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "decimals",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "totalSupply",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "cap",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "owner",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "mintable",
+          }),
+          publicClient.readContract({
+            ...tokenContract,
+            functionName: "burnable",
+          }),
+        ]);
 
-        const supply = formatUnits(totalSupply as bigint, decimals as number);
-        const formattedSupply = new Intl.NumberFormat().format(Number(supply));
+        const formattedSupply = new Intl.NumberFormat().format(
+          Number(formatUnits(totalSupply as bigint, decimals as number))
+        );
+
+        const formattedCap = new Intl.NumberFormat().format(
+          Number(formatUnits(cap as bigint, decimals as number))
+        );
 
         setTokenInfo({
           name: name as string,
           symbol: symbol as string,
           decimals: decimals as number,
           totalSupply: formattedSupply,
+          cap: cap as bigint,
+          formattedCap: formattedCap as string,
           owner: owner as string,
           mintable: mintable as boolean,
           burnable: burnable as boolean,
@@ -139,8 +160,9 @@ export function TokenPage() {
           functionName: "decimals",
         });
 
-        const supply = formatUnits(totalSupply as bigint, decimals as number);
-        const formattedSupply = new Intl.NumberFormat().format(Number(supply));
+        const formattedSupply = new Intl.NumberFormat().format(
+          Number(formatUnits(totalSupply as bigint, decimals as number))
+        );
         setTokenInfo((prev) =>
           prev ? { ...prev, totalSupply: formattedSupply } : null
         );
@@ -356,6 +378,15 @@ export function TokenPage() {
               </label>
               <p className="text-lg text-gray-900">
                 {tokenInfo.totalSupply} {tokenInfo.symbol}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cap
+              </label>
+              <p className="text-lg text-gray-900">
+                {tokenInfo.formattedCap} {tokenInfo.symbol}
               </p>
             </div>
 

@@ -4,8 +4,9 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 
-contract BasicERC20 is ERC20, Ownable, ERC20Burnable {
+contract BasicERC20 is ERC20, Ownable, ERC20Burnable, ERC20Capped {
     uint8 private immutable _customDecimals;
     bool public mintable;
     bool public burnable;
@@ -29,8 +30,13 @@ contract BasicERC20 is ERC20, Ownable, ERC20Burnable {
         uint256 initialSupply_,
         address owner_,
         bool mintable_,
-        bool burnable_
-    ) ERC20(name_, symbol_) Ownable(owner_) {
+        bool burnable_,
+        uint256 cap_
+    )
+        ERC20(name_, symbol_)
+        Ownable(owner_)
+        ERC20Capped(cap_ == 0 ? type(uint256).max : cap_ * (10 ** decimals_))
+    {
         require(bytes(name_).length != 0, "name must be set");
         require(
             bytes(symbol_).length > 0 && bytes(symbol_).length <= 11,
@@ -43,7 +49,8 @@ contract BasicERC20 is ERC20, Ownable, ERC20Burnable {
         _customDecimals = decimals_;
         mintable = mintable_;
         burnable = burnable_;
-        _mint(owner_, initialSupply_ * 10 ** _customDecimals);
+
+        _mint(owner_, initialSupply_ * (10 ** _customDecimals));
     }
 
     function decimals() public view override returns (uint8) {
@@ -66,5 +73,13 @@ contract BasicERC20 is ERC20, Ownable, ERC20Burnable {
     ) public override whenBurnable {
         super.burnFrom(account, amount);
         emit Burned(account, amount);
+    }
+
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override(ERC20, ERC20Capped) {
+        super._update(from, to, value);
     }
 }

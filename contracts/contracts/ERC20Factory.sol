@@ -10,6 +10,7 @@ struct TokenInfo {
     uint8 decimals;
     bool mintable;
     bool burnable;
+    uint256 cap;
 }
 
 contract ERC20Factory {
@@ -23,7 +24,8 @@ contract ERC20Factory {
         string symbol,
         uint8 decimals,
         bool isMintable,
-        bool isBurnable
+        bool isBurnable,
+        uint256 cap
     );
 
     function createToken(
@@ -32,7 +34,8 @@ contract ERC20Factory {
         uint8 decimals_,
         uint256 initialSupply_,
         bool isMintable_,
-        bool isBurnable_
+        bool isBurnable_,
+        uint256 cap_
     ) external returns (address token) {
         token = address(
             new BasicERC20(
@@ -42,7 +45,8 @@ contract ERC20Factory {
                 initialSupply_,
                 msg.sender,
                 isMintable_,
-                isBurnable_
+                isBurnable_,
+                cap_
             )
         );
 
@@ -53,7 +57,8 @@ contract ERC20Factory {
             burnable: isBurnable_,
             decimals: decimals_,
             name: name_,
-            symbol: symbol_
+            symbol: symbol_,
+            cap: cap_
         });
 
         emit TokenDeployed(
@@ -63,7 +68,8 @@ contract ERC20Factory {
             symbol_,
             decimals_,
             isMintable_,
-            isBurnable_
+            isBurnable_,
+            cap_
         );
     }
 

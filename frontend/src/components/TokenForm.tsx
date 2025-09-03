@@ -45,6 +45,7 @@ export function TokenForm() {
   const [initialSupply, setInitialSupply] = useState("1,000");
   const isMintableRef = useRef<HTMLInputElement>(null);
   const isBurnableRef = useRef<HTMLInputElement>(null);
+  const [capInput, setCapInput] = useState("");
 
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -70,6 +71,8 @@ export function TokenForm() {
       if (decimalRef.current) decimalRef.current.value = "18";
       setInitialSupply("1,000");
       if (isMintableRef.current) isMintableRef.current.checked = false;
+      if (isBurnableRef.current) isBurnableRef.current.checked = false;
+      setCapInput("");
     }
   }, [isSuccess]);
 
@@ -87,6 +90,7 @@ export function TokenForm() {
     const supply = parseInt(initialSupply.replace(/,/g, ""), 10);
     const isMintable = isMintableRef.current?.checked ?? false;
     const isBurnable = isBurnableRef.current?.checked ?? false;
+    const cap = parseInputToInt(capInput, 0);
 
     if (!tokenName.length) {
       alert("Token name required");
@@ -111,7 +115,15 @@ export function TokenForm() {
       address: factoryAddress,
       abi: factoryAbi,
       functionName: "createToken",
-      args: [tokenName, tokenSymbol, decimals, supply, isMintable, isBurnable],
+      args: [
+        tokenName,
+        tokenSymbol,
+        decimals,
+        supply,
+        isMintable,
+        isBurnable,
+        cap,
+      ],
     });
   };
 
@@ -126,6 +138,13 @@ export function TokenForm() {
     if (!/^\d*$/.test(value)) return;
     const num = parseInt(value, 10);
     setInitialSupply(Number.isNaN(num) ? "" : num.toLocaleString());
+  };
+
+  const handleCapChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/,/g, "");
+    if (!/^\d*$/.test(value)) return;
+    const num = parseInt(value, 10);
+    setCapInput(Number.isNaN(num) ? "" : num.toLocaleString());
   };
 
   return (
@@ -222,6 +241,25 @@ export function TokenForm() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="mb-4">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="cap"
+          >
+            Token Cap
+          </label>
+          <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="cap"
+            type="text"
+            value={capInput}
+            onChange={handleCapChange}
+            placeholder="0"
+          />
+          <p className="text-gray-600 text-xs mt-1">
+            Keep 0 for unlimited supply cap
+          </p>
         </div>
         <div className="mb-6">
           <label className="flex items-center">
