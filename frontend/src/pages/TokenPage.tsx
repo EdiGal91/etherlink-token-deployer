@@ -381,14 +381,14 @@ export function TokenPage() {
               </p>
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cap
               </label>
               <p className="text-lg text-gray-900">
                 {tokenInfo.formattedCap} {tokenInfo.symbol}
               </p>
-            </div>
+            </div> */}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
